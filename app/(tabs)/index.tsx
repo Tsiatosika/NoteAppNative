@@ -1,98 +1,296 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
-
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+import {
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  StyleSheet,
+  SafeAreaView,
+  Modal,
+  Pressable,
+  Image,
+} from 'react-native';
+import { useState, useMemo } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { useNotes } from '@/hooks/useNotes';
+import SearchBar from '@/components/SearchBar';
+import TabBar from '@/components/TabBar';
+import NoteCard from '@/components/NoteCard';
+import { Note } from '@/constants/types';
 
 export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+  const {
+    notes,
+    selectedIds,
+    isSelecting,
+    toggleFavorite,
+    deleteSelected,
+    toggleSelect,
+    addNote,
+    startSelecting,
+    cancelSelecting,
+  } = useNotes();
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+  const [search, setSearch] = useState('');
+  const [activeTab, setActiveTab] = useState<'all' | 'favorites'>('all');
+  const [menuVisible, setMenuVisible] = useState(false);
+
+  // Filtrage notes
+  const filteredNotes = useMemo(() => {
+    let result = notes;
+    if (activeTab === 'favorites') result = result.filter(n => n.isFavorite);
+    if (search.trim()) {
+      result = result.filter(
+        n =>
+          n.title.toLowerCase().includes(search.toLowerCase()) ||
+          n.content.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+    return result;
+  }, [notes, activeTab, search]);
+
+  // Grille 2 colonnes
+  const rows = useMemo(() => {
+    const pairs: (Note | null)[][] = [];
+    for (let i = 0; i < filteredNotes.length; i += 2) {
+      pairs.push([filteredNotes[i], filteredNotes[i + 1] ?? null]);
+    }
+    return pairs;
+  }, [filteredNotes]);
+
+  const handleCardPress = (note: Note) => {
+    if (isSelecting) {
+      toggleSelect(note.id);
+    } else {
+      // TODO: navigation vers détail
+    }
+  };
+
+  const handleCardLongPress = (note: Note) => {
+    if (!isSelecting) {
+      startSelecting();
+      toggleSelect(note.id);
+    }
+  };
+
+  return (
+    <SafeAreaView style={styles.safe}>
+      <View style={styles.container}>
+
+        {/* ── HEADER ── */}
+        {isSelecting ? (
+          <View style={styles.header}>
+            <TouchableOpacity onPress={cancelSelecting}>
+              <Ionicons name="arrow-back" size={22} color="#111" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>
+              {selectedIds.length} Selected
+            </Text>
+            <TouchableOpacity onPress={deleteSelected}>
+              <Text style={styles.deleteBtn}>Delete</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={styles.header}>
+            <Image
+              source={{ uri: 'https://i.pravatar.cc/100' }}
+              style={styles.avatar}
+            />
+            <Text style={styles.headerTitle}>My Notes</Text>
+            <TouchableOpacity onPress={() => setMenuVisible(true)}>
+              <Ionicons name="ellipsis-vertical" size={20} color="#111" />
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* ── SEARCH ── */}
+        <SearchBar value={search} onChangeText={setSearch} />
+
+        {/* ── TABS ── */}
+        <TabBar activeTab={activeTab} onTabChange={setActiveTab} />
+
+        {/* ── NOTES GRID ── */}
+        <FlatList
+          data={rows}
+          keyExtractor={(_, i) => i.toString()}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.list}
+          renderItem={({ item: row }) => (
+            <View style={styles.row}>
+              {row.map((note, idx) =>
+                note ? (
+                  <NoteCard
+                    key={note.id}
+                    note={note}
+                    isSelecting={isSelecting}
+                    isSelected={selectedIds.includes(note.id)}
+                    onPress={() => handleCardPress(note)}
+                    onLongPress={() => handleCardLongPress(note)}
+                    onToggleFavorite={() => toggleFavorite(note.id)}
+                  />
+                ) : (
+                  <View key={`empty-${idx}`} style={styles.emptyCell} />
+                )
+              )}
+            </View>
+          )}
+          ListEmptyComponent={
+            <View style={styles.empty}>
+              <Ionicons name="document-outline" size={48} color="#ccc" />
+              <Text style={styles.emptyText}>No notes found</Text>
+            </View>
+          }
+        />
+
+        {/* ── FAB ── */}
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={() => addNote('New Note', 'Write something...')}
+          activeOpacity={0.85}
+        >
+          <Ionicons name="add" size={28} color="#fff" />
+        </TouchableOpacity>
+
+        {/* ── MENU MODAL ── */}
+        <Modal
+          visible={menuVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setMenuVisible(false)}
+        >
+          <Pressable
+            style={styles.overlay}
+            onPress={() => setMenuVisible(false)}
+          >
+            <View style={styles.menu}>
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => {
+                  setMenuVisible(false);
+                  startSelecting();
+                }}
+              >
+                <Text style={styles.menuText}>Edit</Text>
+              </TouchableOpacity>
+              <View style={styles.menuDivider} />
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => setMenuVisible(false)}
+              >
+                <Text style={styles.menuText}>View</Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </Modal>
+
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
+  safe: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  container: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+  },
+
+  // Header
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'space-between',
+    marginBottom: 16,
   },
-  stepContainer: {
-    gap: 8,
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#111',
+  },
+  avatar: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#eee',
+  },
+  deleteBtn: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#EF4444',
+  },
+
+  // List
+  list: {
+    paddingTop: 8,
+    paddingBottom: 100,
+  },
+  row: {
+    flexDirection: 'row',
     marginBottom: 8,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
+  emptyCell: {
+    flex: 1,
+    margin: 4,
+  },
+  empty: {
+    alignItems: 'center',
+    marginTop: 80,
+    gap: 12,
+  },
+  emptyText: {
+    fontSize: 15,
+    color: '#ccc',
+  },
+
+  // FAB
+  fab: {
     position: 'absolute',
+    bottom: 28,
+    right: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#4F46E5',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#4F46E5',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+
+  // Menu
+  overlay: {
+    flex: 1,
+  },
+  menu: {
+    position: 'absolute',
+    top: 90,
+    right: 16,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 6,
+    minWidth: 130,
+    overflow: 'hidden',
+  },
+  menuItem: {
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+  },
+  menuText: {
+    fontSize: 15,
+    color: '#111',
+  },
+  menuDivider: {
+    height: 1,
+    backgroundColor: '#F2F2F7',
   },
 });

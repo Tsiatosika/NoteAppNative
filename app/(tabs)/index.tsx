@@ -36,9 +36,9 @@ export default function HomeScreen() {
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<'all' | 'favorites'>('all');
   const [menuVisible, setMenuVisible] = useState(false);
-  const [avatarUri, setAvatarUri] = useState<string | null>(null); // ✅ ajout
+  const [avatarUri, setAvatarUri] = useState<string | null>(null); 
 
-  // ✅ Fonction pour choisir une image depuis le PC / galerie
+  // Fonction pour choisir une image depuis le PC / galerie
   const handlePickAvatar = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
@@ -49,7 +49,7 @@ export default function HomeScreen() {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
-      aspect: [1, 1],      // carré pour un avatar
+      aspect: [1, 1],     
       quality: 0.8,
     });
 
@@ -126,7 +126,6 @@ export default function HomeScreen() {
         ) : (
           <View style={styles.header}>
 
-            {/* ✅ Avatar cliquable */}
             <TouchableOpacity onPress={handlePickAvatar} style={styles.avatarWrapper}>
               {avatarUri ? (
                 <Image source={{ uri: avatarUri }} style={styles.avatar} />
@@ -135,7 +134,7 @@ export default function HomeScreen() {
                   <Ionicons name="person-outline" size={18} color="#999" />
                 </View>
               )}
-              {/* Badge crayon */}
+
               <View style={styles.avatarBadge}>
                 <Ionicons name="pencil" size={8} color="#fff" />
               </View>
@@ -148,13 +147,9 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {/* ── SEARCH ── */}
         <SearchBar value={search} onChangeText={setSearch} />
-
-        {/* ── TABS ── */}
         <TabBar activeTab={activeTab} onTabChange={setActiveTab} />
 
-        {/* ── NOTES GRID ── */}
         <FlatList
           data={rows}
           keyExtractor={(_, i) => i.toString()}
@@ -187,7 +182,6 @@ export default function HomeScreen() {
           }
         />
 
-        {/* ── FAB ── */}
         <TouchableOpacity
           style={styles.fab}
           onPress={() => router.push('/modal')}
@@ -196,7 +190,6 @@ export default function HomeScreen() {
           <Ionicons name="add" size={28} color="#fff" />
         </TouchableOpacity>
 
-        {/* ── MENU MODAL ── */}
         <Modal
           visible={menuVisible}
           transparent
@@ -241,7 +234,6 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#111' },
   deleteBtn: { fontSize: 15, fontWeight: '600', color: '#EF4444' },
 
-  // ✅ Avatar
   avatarWrapper: {
     position: 'relative',
     width: 36,

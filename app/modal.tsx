@@ -1,4 +1,3 @@
-// app/modal.tsx
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useState, useRef } from 'react';
 import {
@@ -19,13 +18,11 @@ export default function NoteModal() {
     createdAt?: string;
   }>();
 
-  // ✅ Guard : si le contexte n'est pas disponible (bug web Expo),
-  // on recharge la page pour forcer le bon arbre React
   let notesContext;
   try {
     notesContext = useNotes();
   } catch {
-    return null; // ou un spinner le temps que le contexte se monte
+    return null; 
   }
 
   const { addNote, updateNote, deleteNote, toggleFavorite } = notesContext;

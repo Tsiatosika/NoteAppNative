@@ -1,27 +1,26 @@
+import { Note } from '@/constants/types';
 import {
   createContext,
+  ReactNode,
+  useCallback,
   useContext,
   useState,
-  useCallback,
-  ReactNode,
 } from 'react';
-import { Note } from '@/constants/types';
 
-// ── Mock data ──
 const MOCK_NOTES: Note[] = [
   {
     id: '1',
-    title: 'Math Notes',
+    title: 'Réviser Java Swing',
     content:
-      'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Malesuada sodales sed et, adipiscing auctor. Et est ipsum et tortor. sodales sed et, adipiscing auctor. Et est ipsum et tortor.',
+        'Revoir les composants : JButton, JLabel \nPratiquer la gestion des événements (ActionListener)',
     createdAt: new Date(),
     isFavorite: true,
   },
   {
     id: '2',
-    title: 'Project Ideas',
+    title: 'Avancer projet e-commerce PHP',
     content:
-      'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Malesuada sodales sed et, adipiscing auctor. Et est ipsum et tortor.',
+        ' Créer la page de connexion utilisateur (login) \n Implémenter les sessions PHP',
     createdAt: new Date('2022-06-20'),
     isFavorite: true,
   },

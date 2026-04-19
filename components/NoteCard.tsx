@@ -38,7 +38,6 @@ export default function NoteCard({
       onLongPress={onLongPress}
       activeOpacity={0.8}
     >
-      {/* Header */}
       <View style={styles.header}>
         <Text style={styles.date}>{formatDate(note.createdAt)}</Text>
         <TouchableOpacity onPress={onToggleFavorite} hitSlop={8}>
@@ -50,17 +49,14 @@ export default function NoteCard({
         </TouchableOpacity>
       </View>
 
-      {/* Title */}
       <Text style={styles.title} numberOfLines={1}>
         {note.title}
       </Text>
 
-      {/* Content */}
       <Text style={styles.content} numberOfLines={5}>
         {note.content}
       </Text>
 
-      {/* Selection indicator */}
       {isSelecting && (
         <View style={[styles.checkCircle, isSelected && styles.checkCircleActive]}>
           {isSelected && (

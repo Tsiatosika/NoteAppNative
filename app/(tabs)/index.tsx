@@ -10,14 +10,16 @@ import {
   Image,
 } from 'react-native';
 import { useState, useMemo } from 'react';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useNotes } from '@/hooks/useNotes';
+import { useNotes } from '@/context/NotesContext';
 import SearchBar from '@/components/SearchBar';
 import TabBar from '@/components/TabBar';
 import NoteCard from '@/components/NoteCard';
 import { Note } from '@/constants/types';
 
 export default function HomeScreen() {
+  const router = useRouter();
   const {
     notes,
     selectedIds,
@@ -34,7 +36,7 @@ export default function HomeScreen() {
   const [activeTab, setActiveTab] = useState<'all' | 'favorites'>('all');
   const [menuVisible, setMenuVisible] = useState(false);
 
-  // Filtrage notes
+  // ── Filtrage ──
   const filteredNotes = useMemo(() => {
     let result = notes;
     if (activeTab === 'favorites') result = result.filter(n => n.isFavorite);
@@ -48,7 +50,7 @@ export default function HomeScreen() {
     return result;
   }, [notes, activeTab, search]);
 
-  // Grille 2 colonnes
+  // ── Grille 2 colonnes ──
   const rows = useMemo(() => {
     const pairs: (Note | null)[][] = [];
     for (let i = 0; i < filteredNotes.length; i += 2) {
@@ -57,11 +59,21 @@ export default function HomeScreen() {
     return pairs;
   }, [filteredNotes]);
 
+  // ── Handlers ──
   const handleCardPress = (note: Note) => {
     if (isSelecting) {
       toggleSelect(note.id);
     } else {
-      // TODO: navigation vers détail
+      router.push({
+        pathname: '/modal',
+        params: {
+          id: note.id,
+          title: note.title,
+          content: note.content,
+          isFavorite: note.isFavorite.toString(),      
+          createdAt: note.createdAt.toISOString(),      
+        },
+      });
     }
   };
 
@@ -144,7 +156,7 @@ export default function HomeScreen() {
         {/* ── FAB ── */}
         <TouchableOpacity
           style={styles.fab}
-          onPress={() => addNote('New Note', 'Write something...')}
+          onPress={() => router.push('/modal')}
           activeOpacity={0.85}
         >
           <Ionicons name="add" size={28} color="#fff" />

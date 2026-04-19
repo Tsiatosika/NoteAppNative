@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
 import { Note } from '@/constants/types';
+import { useCallback, useState } from 'react';
 
 const MOCK_NOTES: Note[] = [
   {
@@ -62,6 +62,12 @@ export function useNotes() {
     setSelectedIds([]);
   }, []);
 
+  const updateNote = useCallback((id: string, title: string, content: string) => {
+  setNotes(prev =>
+    prev.map(n => n.id === id ? { ...n, title, content } : n)
+  );
+}, []);
+
   return {
     notes,
     selectedIds,
@@ -72,5 +78,6 @@ export function useNotes() {
     addNote,
     startSelecting,
     cancelSelecting,
+    updateNote,
   };
 }

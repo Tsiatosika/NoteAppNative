@@ -12,6 +12,7 @@ import {
 import { useState, useMemo } from 'react';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';   
 import { useNotes } from '@/context/NotesContext';
 import SearchBar from '@/components/SearchBar';
 import TabBar from '@/components/TabBar';
@@ -35,6 +36,27 @@ export default function HomeScreen() {
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<'all' | 'favorites'>('all');
   const [menuVisible, setMenuVisible] = useState(false);
+  const [avatarUri, setAvatarUri] = useState<string | null>(null); // ✅ ajout
+
+  // ✅ Fonction pour choisir une image depuis le PC / galerie
+  const handlePickAvatar = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      alert('Permission requise pour accéder à vos photos.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],      // carré pour un avatar
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      setAvatarUri(result.assets[0].uri);
+    }
+  };
 
   // ── Filtrage ──
   const filteredNotes = useMemo(() => {
@@ -70,8 +92,8 @@ export default function HomeScreen() {
           id: note.id,
           title: note.title,
           content: note.content,
-          isFavorite: note.isFavorite.toString(),      
-          createdAt: note.createdAt.toISOString(),      
+          isFavorite: note.isFavorite.toString(),
+          createdAt: note.createdAt.toISOString(),
         },
       });
     }
@@ -103,10 +125,22 @@ export default function HomeScreen() {
           </View>
         ) : (
           <View style={styles.header}>
-            <Image
-              source={{ uri: 'https://i.pravatar.cc/100' }}
-              style={styles.avatar}
-            />
+
+            {/* ✅ Avatar cliquable */}
+            <TouchableOpacity onPress={handlePickAvatar} style={styles.avatarWrapper}>
+              {avatarUri ? (
+                <Image source={{ uri: avatarUri }} style={styles.avatar} />
+              ) : (
+                <View style={styles.avatarPlaceholder}>
+                  <Ionicons name="person-outline" size={18} color="#999" />
+                </View>
+              )}
+              {/* Badge crayon */}
+              <View style={styles.avatarBadge}>
+                <Ionicons name="pencil" size={8} color="#fff" />
+              </View>
+            </TouchableOpacity>
+
             <Text style={styles.headerTitle}>My Notes</Text>
             <TouchableOpacity onPress={() => setMenuVisible(true)}>
               <Ionicons name="ellipsis-vertical" size={20} color="#111" />
@@ -169,17 +203,11 @@ export default function HomeScreen() {
           animationType="fade"
           onRequestClose={() => setMenuVisible(false)}
         >
-          <Pressable
-            style={styles.overlay}
-            onPress={() => setMenuVisible(false)}
-          >
+          <Pressable style={styles.overlay} onPress={() => setMenuVisible(false)}>
             <View style={styles.menu}>
               <TouchableOpacity
                 style={styles.menuItem}
-                onPress={() => {
-                  setMenuVisible(false);
-                  startSelecting();
-                }}
+                onPress={() => { setMenuVisible(false); startSelecting(); }}
               >
                 <Text style={styles.menuText}>Edit</Text>
               </TouchableOpacity>
@@ -200,15 +228,8 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  container: {
-    flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 8,
-  },
+  safe: { flex: 1, backgroundColor: '#fff' },
+  container: { flex: 1, paddingHorizontal: 16, paddingTop: 8 },
 
   // Header
   header: {
@@ -217,45 +238,52 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 16,
   },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#111',
+  headerTitle: { fontSize: 18, fontWeight: '700', color: '#111' },
+  deleteBtn: { fontSize: 15, fontWeight: '600', color: '#EF4444' },
+
+  // ✅ Avatar
+  avatarWrapper: {
+    position: 'relative',
+    width: 36,
+    height: 36,
   },
   avatar: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: '#eee',
   },
-  deleteBtn: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#EF4444',
+  avatarPlaceholder: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F2F2F7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderStyle: 'dashed',
+  },
+  avatarBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: '#4F46E5',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: '#fff',
   },
 
   // List
-  list: {
-    paddingTop: 8,
-    paddingBottom: 100,
-  },
-  row: {
-    flexDirection: 'row',
-    marginBottom: 8,
-  },
-  emptyCell: {
-    flex: 1,
-    margin: 4,
-  },
-  empty: {
-    alignItems: 'center',
-    marginTop: 80,
-    gap: 12,
-  },
-  emptyText: {
-    fontSize: 15,
-    color: '#ccc',
-  },
+  list: { paddingTop: 8, paddingBottom: 100 },
+  row: { flexDirection: 'row', marginBottom: 8 },
+  emptyCell: { flex: 1, margin: 4 },
+  empty: { alignItems: 'center', marginTop: 80, gap: 12 },
+  emptyText: { fontSize: 15, color: '#ccc' },
 
   // FAB
   fab: {
@@ -276,9 +304,7 @@ const styles = StyleSheet.create({
   },
 
   // Menu
-  overlay: {
-    flex: 1,
-  },
+  overlay: { flex: 1 },
   menu: {
     position: 'absolute',
     top: 90,
@@ -293,16 +319,7 @@ const styles = StyleSheet.create({
     minWidth: 130,
     overflow: 'hidden',
   },
-  menuItem: {
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-  },
-  menuText: {
-    fontSize: 15,
-    color: '#111',
-  },
-  menuDivider: {
-    height: 1,
-    backgroundColor: '#F2F2F7',
-  },
+  menuItem: { paddingVertical: 14, paddingHorizontal: 20 },
+  menuText: { fontSize: 15, color: '#111' },
+  menuDivider: { height: 1, backgroundColor: '#F2F2F7' },
 });
